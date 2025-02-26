@@ -10,16 +10,12 @@ services:
       - ./.docker/nginx/web/local.conf:/etc/nginx/conf.d/web.conf # web panel example
       - ./.data/nginx/logs:/var/log/nginx
       - ./app:/var/www/app
-      - ./admin:/var/www/admin
-      # - ./.data/certs/certbot/conf:/etc/letsencrypt # uncomment when production deploy
-      # - ./.data/certs/certbot/www:/var/www/certbot # uncomment when production deploy
     ports:
       - "80:80"
       # - "443:443" # uncomment when production deploy
     depends_on:
       - app
-      - web
-      - admin
+
     networks:
       - application_network
     environment:
@@ -37,36 +33,6 @@ services:
       - application_network
     environment:
       - X_SERVER_TYPE=app
-
-  admin:
-    build:
-      context: .
-      dockerfile: ./.docker/admin/${PHP_VERSION}/Dockerfile
-    container_name: admin
-    volumes:
-      - ./admin:/var/www/admin
-    restart: always
-    networks:
-      - application_network
-    environment:
-      - X_SERVER_TYPE=admin
-
-  web:
-    build:
-      context: .
-      dockerfile: ./.docker/web/Dockerfile
-    container_name: web
-    stdin_open: true
-    volumes:
-      - ./web:/app
-      - /app/node_modules
-      - /app/.next
-    env_file:
-      - ./web/.env
-    networks:
-      - application_network
-    environment:
-      - X_SERVER_TYPE=web
 
   redis:
     image: redis:latest
@@ -99,18 +65,17 @@ services:
       - X_SERVER_TYPE=worker
 
   database:
+    image: mysql:latest
     container_name: database
-    image: postgres:16
     environment:
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_DATABASE}
-      PGDATA: /data/postgres
-    volumes:
-      - ./.data/postgres:/data/postgres
-    #  - ./.docker/postgres/initdb:/docker-entrypoint-initdb.d
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: shakib
+      MYSQL_PASSWORD: secret
     ports:
-      - "5433:5432"
+      - "3306:3306"
+    volumes:
+      - ./.data/mysql:/var/lib/mysql
     restart: always
     networks:
       - application_network
@@ -150,7 +115,7 @@ services:
       - application_network
 
 volumes:
-  pgdata:
+  .data:
   redis:
     driver: local
 
